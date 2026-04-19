@@ -1814,6 +1814,7 @@ impl GooseAcpAgent {
             schedule_id: None,
             max_turns: None,
             retry_config: None,
+            headless: false,
         };
 
         let t_reply = std::time::Instant::now();

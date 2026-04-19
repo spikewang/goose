@@ -1006,6 +1006,7 @@ impl CliSession {
             schedule_id: self.scheduled_job_id.clone(),
             max_turns: self.max_turns,
             retry_config: self.retry_config.clone(),
+            headless: !interactive,
         };
         let user_message = self
             .messages

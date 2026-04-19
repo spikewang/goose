@@ -287,6 +287,7 @@ pub async fn reply(
             schedule_id: session.schedule_id.clone(),
             max_turns: None,
             retry_config: None,
+            headless: false,
         };
 
         let mut all_messages = match override_conversation {

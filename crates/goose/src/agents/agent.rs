@@ -1231,6 +1231,7 @@ impl Agent {
             });
             let mut compaction_attempts = 0;
             let mut last_assistant_text = String::new();
+            let mut consecutive_no_tool_turns = 0u32;
 
             loop {
                 if is_token_cancelled(&cancel_token) {
@@ -1576,6 +1577,7 @@ impl Agent {
                                 }
 
                                 no_tools_called = false;
+                                consecutive_no_tool_turns = 0;
                             }
                         }
                         #[allow(unused_variables)]
@@ -1734,7 +1736,30 @@ impl Agent {
                                         messages_to_add = Conversation::default();
                                         session_manager.replace_conversation(&session_config.id, &conversation).await?;
                                         yield AgentEvent::HistoryReplaced(conversation.clone());
+                                    } else if session_config.headless
+                                        && !last_assistant_text.is_empty()
+                                        && consecutive_no_tool_turns == 0
+                                    {
+                                        // In headless/recipe mode the model sometimes emits a
+                                        // planning message ("let me check the next cluster…")
+                                        // without immediately calling a tool. Give it one nudge
+                                        // to continue. If it responds without tools again, exit.
+                                        consecutive_no_tool_turns += 1;
+                                        info!(
+                                            "Headless mode: model responded without tools (consecutive text-only turn {}), nudging once",
+                                            consecutive_no_tool_turns
+                                        );
+                                        let nudge = Message::user().with_text(
+                                            "Please continue with the next step and use the available tools to proceed."
+                                        );
+                                        messages_to_add.push(nudge.clone());
+                                        yield AgentEvent::Message(nudge);
                                     } else {
+                                        if session_config.headless && consecutive_no_tool_turns > 0 {
+                                            info!(
+                                                "Headless mode: model responded without tools twice in a row, treating as completion"
+                                            );
+                                        }
                                         exit_chat = true;
                                     }
                                 }

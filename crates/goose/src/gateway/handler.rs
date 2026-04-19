@@ -323,6 +323,7 @@ impl GatewayHandler {
             schedule_id: None,
             max_turns: Some(GATEWAY_MAX_TURNS),
             retry_config: None,
+            headless: false,
         };
 
         let mut stream = match agent
