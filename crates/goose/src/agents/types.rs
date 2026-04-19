@@ -92,6 +92,12 @@ pub struct SessionConfig {
     /// Retry configuration for automated validation and recovery
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retry_config: Option<RetryConfig>,
+    /// True when running non-interactively (recipe/headless). When the model
+    /// produces a text-only response without any tool calls the agent injects a
+    /// continuation nudge instead of exiting immediately, giving the model a
+    /// chance to execute the action it described.
+    #[serde(default)]
+    pub headless: bool,
 }
 
 #[cfg(test)]
