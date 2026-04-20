@@ -101,6 +101,11 @@ pub trait McpClientTrait: Send + Sync {
         None
     }
 
+    /// Return (task_id, description) for each background task still running.
+    async fn pending_background_tasks(&self) -> Vec<(String, String)> {
+        Vec::new()
+    }
+
     async fn update_working_dir(&self, _new_dir: PathBuf) -> Result<(), Error> {
         Ok(())
     }

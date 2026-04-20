@@ -1755,12 +1755,36 @@ impl Agent {
                                         messages_to_add.push(nudge.clone());
                                         yield AgentEvent::Message(nudge);
                                     } else {
-                                        if session_config.headless && consecutive_no_tool_turns > 0 {
-                                            info!(
-                                                "Headless mode: model responded without tools twice in a row, treating as completion"
+                                        let pending = self.extension_manager
+                                            .collect_pending_background_tasks()
+                                            .await;
+                                        if !pending.is_empty() {
+                                            let task_list = pending
+                                                .iter()
+                                                .map(|(id, desc)| format!("  - load(source: \"{id}\") — {desc}"))
+                                                .collect::<Vec<_>>()
+                                                .join("\n");
+                                            warn!(
+                                                "Session would exit with {} pending background task(s); forcing continuation",
+                                                pending.len()
                                             );
+                                            let message = Message::user().with_text(format!(
+                                                "You have {} background task(s) still running. \
+                                                 You must call load(source: \"<id>\") for each one \
+                                                 before finishing:\n{task_list}",
+                                                pending.len()
+                                            ));
+                                            messages_to_add.push(message.clone());
+                                            yield AgentEvent::Message(message);
+                                        } else {
+                                            if session_config.headless && consecutive_no_tool_turns > 0 {
+                                                info!(
+                                                    "Headless mode: model responded without tools twice in a row, treating as completion"
+                                                );
+                                            }
+
+                                            exit_chat = true;
                                         }
-                                        exit_chat = true;
                                     }
                                 }
                                 Err(e) => {

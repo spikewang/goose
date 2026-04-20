@@ -1804,6 +1804,36 @@ impl ExtensionManager {
 
         Some(content)
     }
+
+    /// Collect all pending background tasks from platform extensions (e.g. summon).
+    pub async fn collect_pending_background_tasks(&self) -> Vec<(String, String)> {
+        let platform_clients: Vec<McpClientBox> = {
+            let extensions = self.extensions.lock().await;
+            extensions
+                .iter()
+                .filter_map(|(name, extension)| {
+                    let is_platform = match &extension.config {
+                        ExtensionConfig::Platform { .. } => true,
+                        ExtensionConfig::Builtin { name: ext_name, .. } => {
+                            PLATFORM_EXTENSIONS.contains_key(name_to_key(ext_name).as_str())
+                        }
+                        _ => false,
+                    };
+                    if is_platform {
+                        Some(extension.get_client())
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        };
+
+        let mut pending = Vec::new();
+        for client in platform_clients {
+            pending.extend(client.pending_background_tasks().await);
+        }
+        pending
+    }
 }
 
 #[cfg(test)]

@@ -1589,6 +1589,15 @@ impl McpClientTrait for SummonClient {
         Some(&self.info)
     }
 
+    async fn pending_background_tasks(&self) -> Vec<(String, String)> {
+        self.background_tasks
+            .lock()
+            .await
+            .values()
+            .map(|t| (t.id.clone(), t.description.clone()))
+            .collect()
+    }
+
     async fn subscribe(&self) -> mpsc::Receiver<ServerNotification> {
         let (tx, rx) = mpsc::channel(16);
         self.notification_subscribers.lock().await.push(tx);
